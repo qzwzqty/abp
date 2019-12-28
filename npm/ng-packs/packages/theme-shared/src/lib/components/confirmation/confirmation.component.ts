@@ -4,6 +4,7 @@ import { Toaster } from '../../models/toaster';
 
 @Component({
   selector: 'abp-confirmation',
+  // tslint:disable-next-line: component-max-inline-declarations
   template: `
     <p-toast
       position="center"
@@ -23,17 +24,24 @@ import { Toaster } from '../../models/toaster';
         </div>
 
         <div class="abp-confirm-footer justify-content-center">
-          <button *ngIf="!message.hideCancelBtn" type="button" class="btn btn-sm btn-primary" (click)="close(reject)">
-            {{ message.cancelCopy || 'AbpIdentity::Cancel' | abpLocalization }}
+          <button
+            *ngIf="!message.hideCancelBtn"
+            id="cancel"
+            type="button"
+            class="btn btn-sm btn-primary"
+            (click)="close(reject)"
+          >
+            {{ message.cancelText || message.cancelCopy || 'AbpIdentity::Cancel' | abpLocalization }}
           </button>
           <button
             *ngIf="!message.hideYesBtn"
+            id="confirm"
             type="button"
             class="btn btn-sm btn-primary"
             (click)="close(confirm)"
             autofocus
           >
-            <span>{{ message.yesCopy || 'AbpIdentity::Yes' | abpLocalization }}</span>
+            <span>{{ message.yesText || message.yesCopy || 'AbpIdentity::Yes' | abpLocalization }}</span>
           </button>
         </div>
       </ng-template>

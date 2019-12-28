@@ -12,6 +12,7 @@ import {
   ViewContainerRef,
 } from '@angular/core';
 import compare from 'just-compare';
+import clone from 'just-clone';
 
 export type CompareFn<T = any> = (value: T, comparison: T) => boolean;
 
@@ -112,8 +113,11 @@ export class ForDirective implements OnChanges {
 
   private projectItems(items: any[]): void {
     if (!items.length && this.emptyRef) {
+      this.vcRef.clear();
+      // tslint:disable-next-line: no-unused-expression
       this.vcRef.createEmbeddedView(this.emptyRef).rootNodes;
       this.isShowEmptyRef = true;
+      this.differ = null;
 
       return;
     }
@@ -146,12 +150,12 @@ export class ForDirective implements OnChanges {
   }
 
   ngOnChanges() {
-    let items = [...this.items] as any[];
+    let items = clone(this.items) as any[];
     if (!Array.isArray(items)) return;
 
     const compareFn = this.compareFn;
 
-    if (typeof this.filterBy !== 'undefined') {
+    if (typeof this.filterBy !== 'undefined' && typeof this.filterVal !== 'undefined' && this.filterVal !== '') {
       items = items.filter(item => compareFn(item[this.filterBy], this.filterVal));
     }
 

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Volo.Abp.Cli.Http;
+using Volo.Abp.Cli.ProjectBuilding;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Json;
 using Volo.Abp.Threading;
@@ -17,17 +18,21 @@ namespace Volo.Abp.Cli.NuGet
 
         protected ICancellationTokenProvider CancellationTokenProvider { get; }
 
+        protected IRemoteServiceExceptionHandler RemoteServiceExceptionHandler { get; }
+
         public NuGetService(
             IJsonSerializer jsonSerializer,
+            IRemoteServiceExceptionHandler remoteServiceExceptionHandler,
             ICancellationTokenProvider cancellationTokenProvider)
         {
             JsonSerializer = jsonSerializer;
+            RemoteServiceExceptionHandler = remoteServiceExceptionHandler;
             CancellationTokenProvider = cancellationTokenProvider;
         }
 
         public async Task<SemanticVersion> GetLatestVersionOrNullAsync(string packageId, bool includePreviews = false, bool includeNightly = false)
         {
-            using (var client = new CliHttpClient())
+            using (var client = new CliHttpClient(setBearerToken: false))
             {
                 var url = includeNightly ?
                     $"https://www.myget.org/F/abp-nightly/api/v3/flatcontainer/{packageId.ToLowerInvariant()}/index.json" :
@@ -35,10 +40,7 @@ namespace Volo.Abp.Cli.NuGet
 
                 var responseMessage = await client.GetAsync(url, CancellationTokenProvider.Token);
 
-                if (!responseMessage.IsSuccessStatusCode)
-                {
-                    throw new Exception("Remote server returns error! HTTP status code: " + responseMessage.StatusCode);
-                }
+                await RemoteServiceExceptionHandler.EnsureSuccessfulHttpResponseAsync(responseMessage);
 
                 var result = await responseMessage.Content.ReadAsStringAsync();
 
@@ -49,7 +51,8 @@ namespace Volo.Abp.Cli.NuGet
                     versions = versions.Where(x => !x.IsPrerelease);
                 }
 
-                return versions.Any() ? versions.Max() : null;
+                var semanticVersions = versions.ToList();
+                return semanticVersions.Any() ? semanticVersions.Max() : null;
             }
         }
 

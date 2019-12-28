@@ -13,27 +13,25 @@ import { takeUntilDestroy } from '../utils/rxjs-utils';
   selector: 'abp-dynamic-layout',
   template: `
     <ng-container *ngTemplateOutlet="layout ? componentOutlet : routerOutlet"></ng-container>
-
     <ng-template #routerOutlet><router-outlet></router-outlet></ng-template>
     <ng-template #componentOutlet><ng-container *ngComponentOutlet="layout"></ng-container></ng-template>
-  `,
+  `
 })
 export class DynamicLayoutComponent implements OnDestroy {
-  @Select(ConfigState.getOne('requirements'))
-  requirements$: Observable<Config.Requirements>;
+  @Select(ConfigState.getOne('requirements')) requirements$: Observable<Config.Requirements>;
 
   layout: Type<any>;
 
   constructor(private router: Router, private route: ActivatedRoute, private store: Store) {
     const {
       requirements: { layouts },
-      routes,
+      routes
     } = this.store.selectSnapshot(ConfigState.getAll);
 
     if ((this.route.snapshot.data || {}).layout) {
       this.layout = layouts
         .filter(l => !!l)
-        .find(l => snq(() => l.type.toLowerCase().indexOf(this.route.snapshot.data.layout), -1) > -1);
+        .find((l: any) => snq(() => l.type.toLowerCase().indexOf(this.route.snapshot.data.layout), -1) > -1);
     }
 
     this.router.events.pipe(takeUntilDestroy(this)).subscribe(event => {
@@ -42,7 +40,9 @@ export class DynamicLayoutComponent implements OnDestroy {
 
         const layout = (this.route.snapshot.data || {}).layout || findLayout(segments, routes);
 
-        this.layout = layouts.filter(l => !!l).find(l => snq(() => l.type.toLowerCase().indexOf(layout), -1) > -1);
+        this.layout = layouts
+          .filter(l => !!l)
+          .find((l: any) => snq(() => l.type.toLowerCase().indexOf(layout), -1) > -1);
       }
     });
   }
