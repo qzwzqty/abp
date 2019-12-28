@@ -6,13 +6,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using Volo.Abp.Cli.Args;
 using Volo.Abp.Cli.ProjectBuilding.Analyticses;
 using Volo.Abp.Cli.ProjectModification;
 using Volo.Abp.DependencyInjection;
 using Volo.Abp.Json;
-using Volo.Abp.Threading;
 
 namespace Volo.Abp.Cli.Commands
 {
@@ -23,14 +21,14 @@ namespace Volo.Abp.Cli.Commands
         private readonly VoloNugetPackagesVersionUpdater _nugetPackagesVersionUpdater;
         private readonly NpmPackagesUpdater _npmPackagesUpdater;
         private readonly ICliAnalyticsCollect _cliAnalyticsCollect;
-        private readonly CliOptions _options;
+        private readonly AbpCliOptions _options;
         private readonly IJsonSerializer _jsonSerializer;
 
         public UpdateCommand(VoloNugetPackagesVersionUpdater nugetPackagesVersionUpdater,
             NpmPackagesUpdater npmPackagesUpdater,
             ICliAnalyticsCollect cliAnalyticsCollect, 
             IJsonSerializer jsonSerializer, 
-            IOptions<CliOptions> options)
+            IOptions<AbpCliOptions> options)
         {
             _nugetPackagesVersionUpdater = nugetPackagesVersionUpdater;
             _npmPackagesUpdater = npmPackagesUpdater;
@@ -43,21 +41,40 @@ namespace Volo.Abp.Cli.Commands
 
         public async Task ExecuteAsync(CommandLineArgs commandLineArgs)
         {
-            await UpdateNugetPackages(commandLineArgs);
-            UpdateNpmPackages();
+            var updateNpm = commandLineArgs.Options.ContainsKey(Options.Packages.Npm);
+            var updateNuget = commandLineArgs.Options.ContainsKey(Options.Packages.NuGet);
+
+            var directory = commandLineArgs.Options.GetOrNull(Options.SolutionPath.Short, Options.SolutionPath.Long);
+            if (directory == null)
+            {
+                directory = Directory.GetCurrentDirectory();
+            }
+
+            var both = (updateNuget && updateNpm) || (!updateNuget && !updateNpm); 
+
+            if (updateNuget || both)
+            {
+                await UpdateNugetPackages(commandLineArgs, directory);
+            }
+
+            if (updateNpm || both)
+            {
+                UpdateNpmPackages(directory);
+            }
+
         }
 
-        private void UpdateNpmPackages()
+        private void UpdateNpmPackages(string directory)
         {
-            _npmPackagesUpdater.Update(Directory.GetCurrentDirectory());
+            _npmPackagesUpdater.Update(directory);
         }
 
-        private async Task UpdateNugetPackages(CommandLineArgs commandLineArgs)
+        private async Task UpdateNugetPackages(CommandLineArgs commandLineArgs, string directory)
         {
             var includePreviews =
                 commandLineArgs.Options.GetOrNull(Options.IncludePreviews.Short, Options.IncludePreviews.Long) != null;
 
-            var solution = Directory.GetFiles(Directory.GetCurrentDirectory(), "*.sln").FirstOrDefault();
+            var solution = Directory.GetFiles(directory, "*.sln").FirstOrDefault();
 
             if (solution != null)
             {
@@ -99,6 +116,8 @@ namespace Volo.Abp.Cli.Commands
             sb.AppendLine("");
             sb.AppendLine("Options:");
             sb.AppendLine("-p|--include-previews                       (if supported by the template)");
+            sb.AppendLine("--npm                                       (Only updates NPM packages)");
+            sb.AppendLine("--nuget                                     (Only updates Nuget packages)");
             sb.AppendLine("");
             sb.AppendLine("Some examples:");
             sb.AppendLine("");
@@ -118,10 +137,22 @@ namespace Volo.Abp.Cli.Commands
 
         public static class Options
         {
+            public static class SolutionPath
+            {
+                public const string Short = "sp";
+                public const string Long = "solution-path";
+            }
+            
             public static class IncludePreviews
             {
                 public const string Short = "p";
                 public const string Long = "include-previews";
+            }
+
+            public static class Packages
+            {
+                public const string Npm = "npm";
+                public const string NuGet = "nuget";
             }
         }
     }

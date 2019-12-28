@@ -34,7 +34,7 @@ namespace Volo.Abp.Identity
         public virtual string Name { get; set; }
 
         /// <summary>
-        /// Gets or sets the Surame for the user.
+        /// Gets or sets the Surname for the user.
         /// </summary>
         public virtual string Surname { get; set; }
 
@@ -283,7 +283,7 @@ namespace Volo.Abp.Identity
 
         UserEto IMapTo<UserEto>.MapTo()
         {
-            //TODO: Instead, consider to user automapper (but it makes dependency just for a small code part)??
+            //TODO: Instead, consider to use automapper (but it makes dependency just for a small code part)??
 
             return new UserEto
             {

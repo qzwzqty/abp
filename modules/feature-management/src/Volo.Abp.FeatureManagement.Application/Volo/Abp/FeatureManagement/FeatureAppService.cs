@@ -13,7 +13,7 @@ using Volo.Abp.Features;
 namespace Volo.Abp.FeatureManagement
 {
     [Authorize]
-    public class FeatureAppService : ApplicationService, IFeatureAppService
+    public class FeatureAppService : FeatureManagementAppServiceBase, IFeatureAppService
     {
         protected FeatureManagementOptions Options { get; }
 
@@ -32,7 +32,7 @@ namespace Volo.Abp.FeatureManagement
             Options = options.Value;
         }
 
-        public async Task<FeatureListDto> GetAsync([NotNull] string providerName, [NotNull] string providerKey)
+        public virtual async Task<FeatureListDto> GetAsync([NotNull] string providerName, [NotNull] string providerKey)
         {
             await CheckProviderPolicy(providerName);
 
@@ -44,6 +44,7 @@ namespace Volo.Abp.FeatureManagement
                 features.Add(new FeatureDto
                 {
                     Name = featureDefinition.Name,
+                    DisplayName = featureDefinition.DisplayName?.Localize(_stringLocalizerFactory),
                     ValueType = featureDefinition.ValueType,
                     Description = featureDefinition.Description?.Localize(_stringLocalizerFactory),
                     ParentName = featureDefinition.Parent?.Name,
@@ -56,7 +57,7 @@ namespace Volo.Abp.FeatureManagement
             return new FeatureListDto { Features = features };
         }
 
-        public async Task UpdateAsync([NotNull] string providerName, [NotNull] string providerKey, UpdateFeaturesDto input)
+        public virtual async Task UpdateAsync([NotNull] string providerName, [NotNull] string providerKey, UpdateFeaturesDto input)
         {
             await CheckProviderPolicy(providerName);
 
